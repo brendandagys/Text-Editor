@@ -50,6 +50,7 @@ struct editorConfig {
   int screenrows, screencols;
   int numrows;
   erow *row;
+  char *filename;
   struct termios orig_termios;
 };
 
@@ -229,6 +230,9 @@ void editorAppendRow(char *s, size_t len) {
 /*** file i/o ***/
 
 void editorOpen(char *filename) {
+  free(E.filename);  // Free memory pointed to before reassigning with pointer from `strdup()`
+  E.filename = strdup(filename);
+
   FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
@@ -322,7 +326,17 @@ void editorDrawRows(struct abuf *ab) {
 void editorDrawStatusBar(struct abuf *ab) {
   // Select Graphic Rendition (0: none [default], 1: bold, 4: underscore, 5: blink, 7: inverted colors)
   abAppend(ab, "\x1b[7m", 4);
-  int len = 0;
+
+  char status[80];
+  int len = snprintf(
+      status,
+      sizeof(status),
+      "%.20s - %d lines",
+      E.filename ? E.filename : "[No Name]", E.numrows);
+
+  if (len > E.screencols) len = E.screencols;
+  abAppend(ab, status, len);
+
   while (len < E.screencols) {
     abAppend(ab, " ", 1);
     len++;
@@ -431,7 +445,8 @@ void editorProcessKeypress(void) {
 
 void initEditor(void) {
   E.cx = E.cy = E.rx = E.rowoff = E.coloff = E.numrows = 0;
-  E.row = NULL;
+  E.row = NULL;  // Should already be NULL, as `E` is a global struct...
+  E.filename = NULL;
 
   if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
   E.screenrows -= 1;
