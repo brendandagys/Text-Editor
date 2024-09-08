@@ -314,7 +314,13 @@ void editorMoveCursor(int key) {
         E.cx = E.row[E.cy].size;
       }
       break;
-    case ARROW_RIGHT: if (row && E.cx < row->size) E.cx++; break;
+    case ARROW_RIGHT:
+      if (row && E.cx < row->size) E.cx++;
+      else if (row && E.cx == row->size) {
+        E.cy++;
+        E.cx = 0;
+      }
+      break;
     case ARROW_UP:    if (E.cy != 0)               E.cy--; break;
     case ARROW_DOWN:  if (E.cy < E.numrows)        E.cy++; break;
       // clang-format on
