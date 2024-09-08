@@ -3,3 +3,6 @@ editor: editor.c
 
 run: editor
 				./editor
+
+runf: editor
+				./editor editor.c
