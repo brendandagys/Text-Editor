@@ -42,6 +42,7 @@ typedef struct erow {
 
 struct editorConfig {
   int cx, cy;
+  int rowoff;
   int screenrows;
   int screencols;
   int numrows;
@@ -230,10 +231,18 @@ void abFree(struct abuf *ab) {
 
 /*** output ***/
 
+void editorScroll(void) {
+  if (E.cy < E.rowoff)
+    E.rowoff = E.cy;                    // Scroll up to cursor, if above visible window
+  if (E.cy >= E.rowoff + E.screenrows)  // Cursor is below window
+    E.rowoff = E.cy - E.screenrows + 1;
+}
+
 void editorDrawRows(struct abuf *ab) {
   int y;
   for (y = 0; y < E.screenrows; y++) {
-    if (y >= E.numrows) {
+    int filerow = y + E.rowoff;
+    if (filerow >= E.numrows) {
       if (E.numrows == 0 && y == E.screenrows / 3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome), "Text editor -- version %s", EDITOR_VERSION);
@@ -249,9 +258,9 @@ void editorDrawRows(struct abuf *ab) {
         abAppend(ab, "~", 1);
       }
     } else {
-      int len = E.row[y].size;
+      int len = E.row[filerow].size;
       if (len > E.screencols) len = E.screencols;
-      abAppend(ab, E.row[y].chars, len);
+      abAppend(ab, E.row[filerow].chars, len);
     }
 
     abAppend(ab, "\x1b[K", 3);  // Erase In Line (default 0: erase right of cursor)
@@ -260,6 +269,8 @@ void editorDrawRows(struct abuf *ab) {
 }
 
 void editorRefreshScreen(void) {
+  editorScroll();
+
   struct abuf ab = ABUF_INIT;
 
   // Escape sequences always start with `\x1b` (27) followed by `[`
@@ -269,8 +280,9 @@ void editorRefreshScreen(void) {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);  // Move cursor back to top-left
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy - E.rowoff + 1, E.cx + 1);  // Move cursor back to top-left
   abAppend(&ab, buf, strlen(buf));
+
   abAppend(&ab, "\x1b[?25h", 6);  // Set Mode/turn on (25: cursor on/off, h: on)
 
   write(STDOUT_FILENO, ab.b, ab.len);
@@ -291,7 +303,7 @@ void editorMoveCursor(int key) {
       if (E.cy != 0) E.cy--;
       break;
     case ARROW_DOWN:
-      if (E.cy != E.screenrows - 1) E.cy++;
+      if (E.cy < E.numrows) E.cy++;
       break;
   }
 }
@@ -331,7 +343,7 @@ void editorProcessKeypress(void) {
 /*** init ***/
 
 void initEditor(void) {
-  E.cx = E.cy = E.numrows = 0;
+  E.cx = E.cy = E.rowoff = E.numrows = 0;
   E.row = NULL;
 
   if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
