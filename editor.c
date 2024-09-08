@@ -38,17 +38,16 @@ enum editorKey {
 
 typedef struct erow {
   int size;
-  int rsize;
   char *chars;
+  int rsize;
   char *render;
 } erow;
 
 struct editorConfig {
   int cx, cy;
-  int rowoff;
-  int coloff;
-  int screenrows;
-  int screencols;
+  int rx;
+  int rowoff, coloff;
+  int screenrows, screencols;
   int numrows;
   erow *row;
   struct termios orig_termios;
@@ -179,6 +178,16 @@ int getWindowSize(int *rows, int *cols) {
 
 /*** row operations ***/
 
+int editorRowCxToRx(erow *row, int cx) {
+  int rx = 0;
+  for (int j = 0; j < cx; j++) {
+    if (row->chars[j] == '\t') rx += (EDITOR_TAB_STOP - 1) - (rx % EDITOR_TAB_STOP);
+    rx++;
+  }
+
+  return rx;
+}
+
 void editorUpdateRow(erow *row) {
   int tabs = 0;
   int j;
@@ -263,14 +272,20 @@ void abFree(struct abuf *ab) {
 /*** output ***/
 
 void editorScroll(void) {
+  E.rx = 0;
+
+  if (E.cy < E.numrows) {
+    E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
+  }
+
   if (E.cy < E.rowoff)
     E.rowoff = E.cy;                    // Scroll up to cursor, if above visible window
   if (E.cy >= E.rowoff + E.screenrows)  // Cursor is below window
     E.rowoff = E.cy - E.screenrows + 1;
-  if (E.cx < E.coloff)
-    E.coloff = E.cx;
-  if (E.cx >= E.coloff + E.screencols)
-    E.coloff = E.cx - E.screencols + 1;
+  if (E.rx < E.coloff)
+    E.coloff = E.rx;
+  if (E.rx >= E.coloff + E.screencols)
+    E.coloff = E.rx - E.screencols + 1;
 }
 
 void editorDrawRows(struct abuf *ab) {
@@ -321,7 +336,7 @@ void editorRefreshScreen(void) {
       sizeof(buf),
       "\x1b[%d;%dH",        // Move cursor back to top-left
       E.cy - E.rowoff + 1,  // Account for scrolling
-      E.cx - E.coloff + 1);
+      E.rx - E.coloff + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);  // Set Mode/turn on (25: cursor on/off, h: on)
@@ -396,7 +411,7 @@ void editorProcessKeypress(void) {
 /*** init ***/
 
 void initEditor(void) {
-  E.cx = E.cy = E.rowoff = E.coloff = E.numrows = 0;
+  E.cx = E.cy = E.rx = E.rowoff = E.coloff = E.numrows = 0;
   E.row = NULL;
 
   if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
