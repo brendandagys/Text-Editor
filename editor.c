@@ -43,6 +43,7 @@ typedef struct erow {
 struct editorConfig {
   int cx, cy;
   int rowoff;
+  int coloff;
   int screenrows;
   int screencols;
   int numrows;
@@ -236,6 +237,10 @@ void editorScroll(void) {
     E.rowoff = E.cy;                    // Scroll up to cursor, if above visible window
   if (E.cy >= E.rowoff + E.screenrows)  // Cursor is below window
     E.rowoff = E.cy - E.screenrows + 1;
+  if (E.cx < E.coloff)
+    E.coloff = E.cx;
+  if (E.cx >= E.coloff + E.screencols)
+    E.coloff = E.cx - E.screencols + 1;
 }
 
 void editorDrawRows(struct abuf *ab) {
@@ -258,9 +263,10 @@ void editorDrawRows(struct abuf *ab) {
         abAppend(ab, "~", 1);
       }
     } else {
-      int len = E.row[filerow].size;
+      int len = E.row[filerow].size - E.coloff;
+      if (len < 0) len = 0;
       if (len > E.screencols) len = E.screencols;
-      abAppend(ab, E.row[filerow].chars, len);
+      abAppend(ab, &E.row[filerow].chars[E.coloff], len);
     }
 
     abAppend(ab, "\x1b[K", 3);  // Erase In Line (default 0: erase right of cursor)
@@ -280,7 +286,12 @@ void editorRefreshScreen(void) {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy - E.rowoff + 1, E.cx + 1);  // Move cursor back to top-left
+  snprintf(
+      buf,
+      sizeof(buf),
+      "\x1b[%d;%dH",        // Move cursor back to top-left
+      E.cy - E.rowoff + 1,  // Account for scrolling
+      E.cx - E.coloff + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6);  // Set Mode/turn on (25: cursor on/off, h: on)
@@ -293,18 +304,12 @@ void editorRefreshScreen(void) {
 
 void editorMoveCursor(int key) {
   switch (key) {
-    case ARROW_LEFT:
-      if (E.cx != 0) E.cx--;
-      break;
-    case ARROW_RIGHT:
-      if (E.cx != E.screencols - 1) E.cx++;
-      break;
-    case ARROW_UP:
-      if (E.cy != 0) E.cy--;
-      break;
-    case ARROW_DOWN:
-      if (E.cy < E.numrows) E.cy++;
-      break;
+      // clang-format off
+    case ARROW_LEFT:  if (E.cx != 0)        E.cx--; break;
+    case ARROW_RIGHT:                       E.cx++; break;
+    case ARROW_UP:    if (E.cy != 0)        E.cy--; break;
+    case ARROW_DOWN:  if (E.cy < E.numrows) E.cy++; break;
+      // clang-format on
   }
 }
 
@@ -343,7 +348,7 @@ void editorProcessKeypress(void) {
 /*** init ***/
 
 void initEditor(void) {
-  E.cx = E.cy = E.rowoff = E.numrows = 0;
+  E.cx = E.cy = E.rowoff = E.coloff = E.numrows = 0;
   E.row = NULL;
 
   if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
