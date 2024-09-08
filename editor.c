@@ -319,6 +319,17 @@ void editorDrawRows(struct abuf *ab) {
   }
 }
 
+void editorDrawStatusBar(struct abuf *ab) {
+  // Select Graphic Rendition (0: none [default], 1: bold, 4: underscore, 5: blink, 7: inverted colors)
+  abAppend(ab, "\x1b[7m", 4);
+  int len = 0;
+  while (len < E.screencols) {
+    abAppend(ab, " ", 1);
+    len++;
+  }
+  abAppend(ab, "\x1b[m", 3);
+}
+
 void editorRefreshScreen(void) {
   editorScroll();
 
@@ -329,6 +340,7 @@ void editorRefreshScreen(void) {
   abAppend(&ab, "\x1b[H", 3);     // Position cursor, default 1;1 (Cursor Position [H])
 
   editorDrawRows(&ab);
+  editorDrawStatusBar(&ab);
 
   char buf[32];
   snprintf(
