@@ -231,6 +231,25 @@ void editorAppendRow(char *s, size_t len) {
   E.numrows++;
 }
 
+void editorRowInsertChar(erow *row, int at, int c) {
+  if (at < 0 || at > row->size) at = row->size;
+  row->chars = realloc(row->chars, row->size + 2);
+  memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+  row->size++;
+  row->chars[at] = c;
+  editorUpdateRow(row);
+}
+
+/*** editor operations ***/
+
+void editorInsertChar(int c) {
+  if (E.cy == E.numrows) {
+    editorAppendRow("", 0);
+  }
+  editorRowInsertChar(&E.row[E.cy], E.cx, c);
+  E.cx++;
+}
+
 /*** file i/o ***/
 
 void editorOpen(char *filename) {
@@ -434,20 +453,18 @@ void editorProcessKeypress(void) {
   int c = editorReadKey();
 
   switch (c) {
+      // clang-format off
     case CTRL_KEY('q'):
       write(STDOUT_FILENO, "\x1b[2J", 4);
       write(STDOUT_FILENO, "\x1b[H", 3);
       exit(0);
 
-    case HOME_KEY:
-      E.cx = 0;
-      break;
+    case HOME_KEY: E.cx = 0; break;
     case END_KEY:
       if (E.cy < E.numrows) E.cx = E.row[E.cy].size;
       break;
 
-    case PAGE_UP:
-    case PAGE_DOWN: {
+    case PAGE_UP: case PAGE_DOWN: {
       if (c == PAGE_UP) {
         E.cy = E.rowoff;
       } else if (c == PAGE_DOWN) {
@@ -456,16 +473,15 @@ void editorProcessKeypress(void) {
       }
 
       int times = E.screenrows;  // Block allows declaration of `times` local variable
-      while (times--)
-        editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+      while (times--) editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
     } break;
 
-    case ARROW_UP:
-    case ARROW_DOWN:
-    case ARROW_LEFT:
-    case ARROW_RIGHT:
+    case ARROW_UP: case ARROW_DOWN: case ARROW_LEFT: case ARROW_RIGHT:
       editorMoveCursor(c);
       break;
+    
+    default: editorInsertChar(c); break;
+      // clang-format on
   }
 }
 
