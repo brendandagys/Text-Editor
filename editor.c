@@ -54,6 +54,7 @@ struct editorConfig {
   int screenrows, screencols;
   int numrows;
   erow *row;
+  int dirty;
   char *filename;
   char statusmsg[80];
   time_t statusmsg_time;
@@ -235,6 +236,7 @@ void editorAppendRow(char *s, size_t len) {
   editorUpdateRow(&E.row[at]);
 
   E.numrows++;
+  E.dirty++;
 }
 
 void editorRowInsertChar(erow *row, int at, int c) {
@@ -244,6 +246,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
   row->size++;
   row->chars[at] = c;
   editorUpdateRow(row);
+  E.dirty++;
 }
 
 /*** editor operations ***/
@@ -296,6 +299,7 @@ void editorOpen(char *filename) {
 
   free(line);
   fclose(fp);
+  E.dirty = 0;
 }
 
 void editorSave(void) {
@@ -310,6 +314,7 @@ void editorSave(void) {
       if (write(fd, buf, len) == len) {
         close(fd);
         free(buf);
+        E.dirty = 0;
         editorSetStatusMessage("%d bytes written to disk", len);
         return;
       }
@@ -401,8 +406,10 @@ void editorDrawStatusBar(struct abuf *ab) {
   int len = snprintf(
       status,
       sizeof(status),
-      "%.20s - %d lines",
-      E.filename ? E.filename : "[No Name]", E.numrows);
+      "%.20s - %d lines%s",
+      E.filename ? E.filename : "[No Name]",
+      E.numrows,
+      E.dirty ? " (modified)" : "");
 
   int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cy + 1, E.numrows);
 
@@ -545,7 +552,7 @@ void editorProcessKeypress(void) {
 /*** init ***/
 
 void initEditor(void) {
-  E.cx = E.cy = E.rx = E.rowoff = E.coloff = E.numrows = 0;
+  E.cx = E.cy = E.rx = E.rowoff = E.coloff = E.numrows = E.dirty = 0;
   E.row = NULL;  // Should already be NULL, as `E` is a global struct...
   E.filename = NULL;
   E.statusmsg[0] = '\0';
