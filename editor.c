@@ -244,7 +244,7 @@ void editorRowInsertChar(erow *row, int at, int c) {
 /*** editor operations ***/
 
 void editorInsertChar(int c) {
-  if (E.cy == E.numrows) {
+  if (E.cy == E.numrows) {  // On a tilde line; must append a row before inserting
     editorAppendRow("", 0);
   }
   editorRowInsertChar(&E.row[E.cy], E.cx, c);
