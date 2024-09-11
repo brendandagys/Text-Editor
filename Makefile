@@ -5,4 +5,4 @@ run: editor
 				./editor
 
 runf: editor
-				./editor editor.c
+				./editor dummy-editor.c
