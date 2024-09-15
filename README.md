@@ -1,6 +1,6 @@
-# C Text Editor
+# Text Editor
 
-This is a simple text editor written in C. The program allows you to open a blank text editor or an existing file to edit.
+This is a simple text editor written in C, using the standard library. The program allows you to open a blank text editor or an existing file to edit.
 
 ## Features
 
