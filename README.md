@@ -55,15 +55,15 @@ You can run the program in two ways:
     Make:
 
         make run
-    Using the binary:
+    Or, using the binary:
 
-        `./binary-name`
+        ./binary-name
 
 2. **Opening an existing file**
 
     Make:
 
         make runf
-    Using the binary:
+    Or, using the binary:
 
-        `./binary-name filename`
+        ./binary-name filename
