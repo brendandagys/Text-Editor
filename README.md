@@ -33,9 +33,11 @@ cd text-editor
 ## Compiling the program
 
 The compiled binaries for ARM64 and x86-64 are provided in the root directory. If you want to re-compile, you have two options:
-1. **Assign the proper default target at the top of the Makefile:**
+
+1.  **Assign the proper default target at the top of the Makefile:**
 
         ARCH := arm64
+
     or
 
         ARCH := x86_64
@@ -44,26 +46,28 @@ The compiled binaries for ARM64 and x86-64 are provided in the root directory. I
 
         make
 
-2. **Directly run `make arm64` or `make x86_64`**
+2.  **Directly run `make arm64` or `make x86_64`**
 
 ## Running the program
 
 You can run the program in two ways:
 
-1. **Blank editor; new file**
+1.  **Blank editor; new file**
 
     Make:
 
         make run
+
     Or, using the binary:
 
         ./binary-name
 
-2. **Opening an existing file**
+2.  **Opening an existing file**
 
     Make:
 
-        make runf
+        make runf filename
+
     Or, using the binary:
 
         ./binary-name filename

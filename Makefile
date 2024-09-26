@@ -36,7 +36,7 @@ run: $(OUTPUT)
 # Run the editor with a specific file (defaults to the current architecture)
 runf: $(OUTPUT)
 	echo $(ARCH)
-	./$(OUTPUT) dummy-editor.c
+	./$(OUTPUT) $(SRC)
 
 # Clean up generated files
 clean:
