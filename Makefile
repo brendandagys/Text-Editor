@@ -6,7 +6,6 @@ COMPILERFLAGS := -Wall -Wextra -pedantic -std=c99
 
 # Determine target architecture
 ifeq ($(ARCH), x86_64)
-    ARCH_FLAGS := -arch x86_64
     OUTPUT := editor-x86_64
 else ifeq ($(ARCH), arm64)
     ARCH_FLAGS := -arch arm64
